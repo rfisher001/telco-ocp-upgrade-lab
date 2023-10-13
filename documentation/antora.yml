@@ -1,0 +1,7 @@
+name: "4.10"
+title: LAB - Telco OCP Upgrade Lab
+version: ~
+nav:
+  - modules/ROOT/nav.adoc
+
+start_page: ROOT:index.adoc

@@ -1,0 +1,35 @@
+runtime:
+  cache_dir: ./.cache/antora
+
+site:
+  title: LAB - Telco OCP Upgrade Lab
+  url: http://localhost:3000/telco-ocp-upgrade-lab/index.html
+  start_page: telco-ocp-upgrade-lab::index.adoc
+
+content:
+  sources:
+    - url: .
+      branches: 
+      - 'lab-4.13'
+      start_path: documentation
+
+asciidoc:
+  attributes:
+    release-version: 4.13
+    page-pagination: true
+  extensions:
+    - ./lib/tab-block.js
+    - ./lib/remote-include-processor.js
+
+ui:
+  bundle:
+    url: ./ui-bundle-telco.zip
+    snapshot: true
+  supplemental_files:
+    - path: ./supplemental-ui
+    - path: .nojekyll
+    - path: ui.yml
+      contents: "static_files: [ .nojekyll ]"
+
+output:
+  dir: ./gh-pages

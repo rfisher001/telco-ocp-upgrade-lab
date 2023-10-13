@@ -1,0 +1,25 @@
+= Welcome to the Red Hat Lab - Telco OCP Upgrades
+:page-layout: home
+:!sectids:
+
+[.text-center.strong]
+== Red Hat Lab - Telco OCP Upgrades
+
+This hands-on lab ...
+
+IMPORTANT: This is not an official Red Hat Training. Please contact with your Red Hat representative if you want more information about Training or Guidelines about this topic / product.
+
+[#contributors]
+== Contributors
+
+[cols="1,1"]
+|===
+|Name |Role
+
+|Alice
+|Lab Developer / Maintainer
+
+|Bob
+|Lab Reviewer
+
+|===
