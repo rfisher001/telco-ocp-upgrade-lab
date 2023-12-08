@@ -1,20 +1,49 @@
 = Introduction
 include::_attributes.adoc[]
-:profile: telco-ocp-upgrade-lab
+:profile: core-lcm-lab
 
 Welcome to this Telco OCP Upgrades Lab.
+
+Why are upgrades important? 
+This is the question that all Telco platform administrators are faced with answering. 
+
+There is the simple response: because there is a new release out there.
+
+The CNF (container native function) based response: The CNF requires additional functionality from the platform, therefore we need to upgrade OpenShift to get the new functionality.
+
+The pragmatic response: All software needs to be patched because of bug and due to potential security vulnerabilities that have been found since the installation of the cluster.
+
+With OpenShift and K8s (Kubernetes) we are adding in yet another: The platform is only supported for a specific period of time and new releases are coming out every 4 months.
+
+Platform administrators are also asked why not just wait until we need to upgrade due to support?
+
+If we put all of these together we find that OpenShift and K8s have made this less painful for Telco companies because we can skip every other release. OpenShift has long term support (EUS - extended update support) on all even releases and upgrade paths between these EUS releases. This document will discuss how to best upgrade from one EUS to the next and how to plan for that upgrade.
+
+We want you to experience and learn about the steps and procedures that are needed to perform an OpenShift in service upgrade. Listening to and reading about an upgrade can only give you so much experience. Now we can apply the discussion to an experience that will walk you through the steps. 
+
+This document is intended to discuss OpenShift LifeCycle management for Telecommunication Network Function Core clusters. The specific size of the cluster has a few differences which are called out specifically at times in this document but this is meant to cover most clusters from 3 nodes to the largest cluster certified by the telco scale team. This includes some scenarios for mixed workload clusters.
+
+This document will discuss the following upgrade scenarios:
+
+* Z-Stream 
+* Y-Stream 
+* EUS to EUS 
+
+Each of these scenarios has different considerations which are called out as needed.
+
 
 [#lab-aim]
 == Who is this lab aimed at? 
 
 The lab is aimed to technical profiles working with OpenShift who are interested in any of these areas:
 
-* Foo
-* Bar
+* LifeCycle Management of OpenShift
+* Telecommunications Core 5G Baremetal Cluster Upgrades
+* Disconnected Environments
 
 [#lab-software-versions]
 == Lab Software Versions
 
 The lab is based on the following software versions.
 
-* OpenShift Container Platform v4.X
+* OpenShift Container Platform v4.12 upgrading to v4.14

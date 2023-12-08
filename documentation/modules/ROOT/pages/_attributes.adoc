@@ -1,0 +1,5 @@
+:experimental:
+:source-highlighter: highlightjs
+:branch: lab-4.14
+:github-repo: https://github.com/RHsyseng/5g-ran-deployments-on-ocp-lab/blob/{branch}
+:profile: core-lcm-lab

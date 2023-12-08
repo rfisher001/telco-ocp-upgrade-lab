@@ -1,0 +1,19 @@
+= OCP API Compatibility Policy
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+The most important thing to understand when considering which Z-release to upgrade to inside of a new Y-release is what 
+patches need to be in the new Z-release. In other words if you are currently at OCP 4.11.28 you will need to make sure 
+to upgrade to a Z-release of 4.12 that has all of the patches in it that were applied to 4.11.28, otherwise you will 
+break the built-in compatibility of Kubernetes. +
+This is called the Kubernetes version skew policy and can be found at: https://kubernetes.io/releases/version-skew-policy[https://kubernetes.io/releases/version-skew-policy]  +
+This can also be seen in the following graphic:
+
+.K8s Version Skey
+image::../assets/images/k8s-vers-skew.png[]
+
+
+Please also note that not all releases of OCP can be upgraded to any arbitrary Z-release even if they contain all of 
+the required patches. You can use the upgrade graph tool (https://access.redhat.com/labs/ocpupgradegraph/update_path[https://access.redhat.com/labs/ocpupgradegraph/update_path]) 
+to determine if the path is valid for your z-release. You should also always verify with your Sales Engineer or 
+Technical Account Manager at Red Hat to make sure the upgrade path is valid for Telco implementations.

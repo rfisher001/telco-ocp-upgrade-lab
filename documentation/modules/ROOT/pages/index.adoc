@@ -16,10 +16,10 @@ IMPORTANT: This is not an official Red Hat Training. Please contact with your Re
 |===
 |Name |Role
 
-|Alice
+|Rob Fisher
 |Lab Developer / Maintainer
 
-|Bob
+|
 |Lab Reviewer
 
 |===

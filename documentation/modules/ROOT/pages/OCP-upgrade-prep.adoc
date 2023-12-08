@@ -1,0 +1,69 @@
+= OCP Upgrade Preparation
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+== Firmware compatibility
+
+All hardware vendors will advise that it is always best to be on their latest certified version of firmware for their
+hardware. In the telco world this comes with a trust but verify approach due to the high throughput nature of telco
+CNFs. Therefore, it is important to have a regimented group who can test the current and latest firmware from any vendor
+to make sure that all components will work with both. It is not always recommended to upgrade firmware in conjunction
+with an OCP upgrade however if it is possible to test the latest release of firmware that will improve the odds that
+you won’t run into issues down the road. +
+Upgrading firmware is a very important debate because the process can be very intrusive and has a potential for causing
+a node to require manual interventions before the node will come back online. On the other hand it may be imperative to
+upgrade the firmware due to security fixes, new required functionality or compatibility with the new release of OCP
+components. Therefore, it is up to everyone to verify with their hardware vendors, verify compatibility with OCP
+components and perform tests in their lab before moving forward. 
+
+== Layer product compatibility
+
+It is important to make sure all layered products will run on the new version of OCP that you will be moving to. This,
+very much, includes all Operators. 
+
+Verify the current installed list of Operators installed on your cluster. For example:
+[source,bash]
+----
+# oc get csv -A
+NAMESPACE                              NAME                                 DISPLAY          VERSION   REPLACES                             PHASE
+chapter2                               gitlab-operator-kubernetes.v0.17.2   GitLab           0.17.2    gitlab-operator-kubernetes.v0.17.1   Succeeded
+openshift-operator-lifecycle-manager   packageserver                        Package Server   0.19.0                                         Succeeded
+----
+
+== Prepare MCPs
+
+Prepare your Machine Config Pool (MCP) labels by grouping your nodes, depending on the number of nodes in your cluster.
+MCPs should be split up into 8 to 10 nodes per group. However, there is no hard fast rule as to how many nodes need to
+be in each MCP. The purpose of these MCPs is to group nodes together so that a group of nodes can be controlled
+independently of the rest. Additional information and examples can be found https://docs.openshift.com/container-platform/4.12/updating/update-using-custom-machine-config-pools.html[here, under the canary rollout documentation]. +
+These MCPs will be used to un-pause a set of nodes during the upgrade process, thus allowing them to be upgraded and
+rebooted at a determined time instead of at the pleasure of the scheduler. Please review the upgrade process flow
+section, below, for more details on the pause/un-pause process.
+
+// insert image for MCP
+.Worker node MCPs in a 5 rack cluster
+image::../assets/images/5Rack-MCP.jpg[]
+
+The division and size of these MCPs can vary depending on many factors. In general the standard division is between 8
+and 10 nodes per MCP to allow the operations team to control how many nodes are taken down at a time.
+
+.Separate MCPs inside of a group of Load Balancer or purpose built nodes
+image::../assets/images/LBorHT-MCP.jpg[]
+
+In larger clusters there is quite often a need to separate out several nodes for purposes like Load Balancing or other
+high throughput purposes, which usually have different machine sets to configure SR-IOV. In these cases we do not want
+to upgrade all of these nodes without getting a chance to test during the upgrade. Therefore, we need to separate them
+out into at least 3 different MCPs and unpause them individually.
+
+// insert image for MCP
+.Small cluster worker MCPs
+image::../assets/images/Worker-MCP.jpg[]
+
+Smaller cluster example with 1 rack
+
+The process and pace at which you un-pause the MCPs is determined by your CNFs and their configuration. Please review
+the sections on PDB and anti-affinity for CNFs. If your CNF can properly handle scheduling within an OpenShift cluster
+you can un-pause several MCPs at a time and set the MaxUnavailable to as high as 50%. This will allow as many as half
+of the nodes in your MCPs to restart and upgrade. This will reduce the amount of time that is needed for a specific
+maintenance window and allow your cluster to upgrade quickly. Hopefully you can see how keeping your PDB and
+anti-affinity correctly configured will help in the long run.

@@ -1,0 +1,62 @@
+= Applying MCPs
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+First you can run “oc get mcp” to show your current list of MCPs:
+
+[source,bash]
+----
+# oc get mcp
+
+----
+
+List out all of your nodes:
+
+[source,bash]
+----
+# oc get no
+
+----
+Determine, from the above suggestions, how you would like to separate out your worker nodes into machine config pools
+(MCP). +
+In this example we will just use 1 node in each MCP. +
+We first need to label the nodes so that they can be put into MCPs. We will do this with the following commands:
+
+[source,bash]
+----
+oc label node euschannel-worker-0.test.corp node-role.kubernetes.io/*mcp-1*=
+
+----
+
+This will show up when you run the “oc get node” command:
+
+[source,bash]
+----
+# oc get no
+
+----
+
+Now you need to create yaml files that will apply the labels as MCPs. Here is one example:
+
+[source,bash]
+----
+apiVersion: machineconfiguration.openshift.io/v1
+
+----
+
+For each of these, just run “oc apply -f {filename.yaml}”:
+
+[source,bash]
+----
+# oc apply -f test-mcp-2.yaml
+
+----
+
+Now you can run “oc get mcp” again and your new MCPs will show. Please note that you will still see the original worker
+and master MCPs that are part of the cluster.
+
+[source,bash]
+----
+# oc get mcp
+
+----
