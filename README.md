@@ -1,1 +1,1 @@
-This is the source code for [https://labs.sysdeseng.com/hypershift-baremetal-lab/4.13/index.html](https://labs.sysdeseng.com/hypershift-baremetal-lab/4.13/index.html)
+Please excuse our dust... we are working on the build of this lab. 

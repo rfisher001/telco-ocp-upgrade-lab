@@ -1,0 +1,46 @@
+= CNF Upgrade Preparation
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+The life of a POD is an important topic to understand. This section will describe several topics that are important to 
+keeping your CNF PODs healthy and allow the cluster to properly schedule them during an upgrade.
+
+== CNF Requirements Document
+
+Before you go any further, please read through the https://connect.redhat.com/sites/default/files/2022-05/Cloud%20Native%20Network%20Function%20Requirements%201-3.pdf[CNF requirements document]. 
+In this section a few of the most important points will be discussed but the CNF Requirements Document has additional 
+detail and other important topics.
+
+== POD Disruption Budget
+
+Each set of PODs in a deployment can be given a specific minimum number of PODs that should be running in order to keep 
+from disrupting the functionality of the CNF, thus called the POD disruption budget (PDB). However, this budget can be 
+improperly configured.  +
+For example, if you have 4 PODs in a deployment and your PDB is set to 4, this means that you are telling the scheduler 
+that you NEED 4 PODs running at all times. Therefore, in this scenario ZERO PODs can come down. 
+
+.Deployment with no PDB
+image::../assets/images/PDB-full.jpg[]
+
+To fix this, the PDB can be set to 2, letting 2 of the 4 pods to be scheduled as down and this would then let the worker
+nodes where those PODs are located be rebooted.
+
+.Deployment with PDB
+image::../assets/images/PDB-down-2.jpg[]
+
+== POD Anti-affinity
+
+True high availability requires a duplication of a process to be running on separate hardware, thus making sure that an
+application will continue to run if one piece of hardware goes down. OpenShift can easily make that happen since
+processes are automatically duplicated in separate PODs within a deployment. However, those PODs need to have
+anti-affinity set on them so that they are NOT running on the same hardware. It so happens that anti-affinity also
+helps during upgrades because it makes sure that PODs are on different worker nodes, therefore allowing enough PODs to
+come down even after considering their PDB.
+
+== Liveness / Readiness Probes
+
+OpenShift and Kubernetes have some built in features that not everyone takes advantage of called
+https://docs.openshift.com/container-platform/4.12/applications/application-health.html[liveness and readiness probes].
+These are very important when POD deployments are dependent upon keeping state for their application. This document
+won’t go into detail regarding these probes but please review the https://docs.openshift.com/container-platform/4.12/applications/application-health.html[OpenShift documentation]
+on how to implement their use.
