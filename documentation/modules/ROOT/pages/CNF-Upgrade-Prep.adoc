@@ -5,37 +5,46 @@ include::_attributes.adoc[]
 The life of a POD is an important topic to understand. This section will describe several topics that are important to 
 keeping your CNF PODs healthy and allow the cluster to properly schedule them during an upgrade.
 
+[#life-of-a-pod]
+== Life of a POD
+Why is this important? 
+
+Pods don’t move or reboot. Pods are deleted and a new pod takes its place.
+
+There isn’t (or shouldn’t be) a single pod with it’s own set of specifications but instead it should have lots of other pods that are the exact same in a group, called a deployment. A deployment should spread the workload across all of the pods.
+
+This is specified because we need to move away from the idea that each and every single pod needs to be cared for like it is that only strand holding things together. The old saying goes, a rope is made up of many strands, which is what makes it stronger than any single strand.
+
+[#cnf-req-doc]
 == CNF Requirements Document
 
 Before you go any further, please read through the https://connect.redhat.com/sites/default/files/2022-05/Cloud%20Native%20Network%20Function%20Requirements%201-3.pdf[CNF requirements document]. 
 In this section a few of the most important points will be discussed but the CNF Requirements Document has additional 
 detail and other important topics.
 
+[#pdb]
 == POD Disruption Budget
 
-Each set of PODs in a deployment can be given a specific minimum number of PODs that should be running in order to keep 
-from disrupting the functionality of the CNF, thus called the POD disruption budget (PDB). However, this budget can be 
-improperly configured.  +
-For example, if you have 4 PODs in a deployment and your PDB is set to 4, this means that you are telling the scheduler 
-that you NEED 4 PODs running at all times. Therefore, in this scenario ZERO PODs can come down. 
+Each set of PODs in a deployment can be given a specific minimum number of PODs that should be running in order to keep from disrupting the functionality of the CNF, thus called the POD disruption budget (PDB). However, this budget can be improperly configured. 
+
+For example, if you have 4 PODs in a deployment and your PDB is set to 4, this means that you are telling the scheduler that you NEED 4 PODs running at all times. Therefore, in this scenario ZERO PODs can come down.
 
 .Deployment with no PDB
-image::../assets/images/PDB-full.jpg[]
+image::PDB-full.jpg[]
 
-To fix this, the PDB can be set to 2, letting 2 of the 4 pods to be scheduled as down and this would then let the worker
-nodes where those PODs are located be rebooted.
+To fix this, the PDB can be set to 2, letting 2 of the 4 PODs to be scheduled as down and this would then let the worker nodes where those PODs are located be rebooted.
+
+This does NOT mean that your deployment will be running on only 2 pods for a period of time. This means that 2 new pods can be created to replace 2 current pods and there can be a short period of time as the new pods come online and the old pods are deleted.
 
 .Deployment with PDB
-image::../assets/images/PDB-down-2.jpg[]
+image::PDB-down-2.jpg[]
 
+[#pod-anti-affinity]
 == POD Anti-affinity
 
-True high availability requires a duplication of a process to be running on separate hardware, thus making sure that an
-application will continue to run if one piece of hardware goes down. OpenShift can easily make that happen since
-processes are automatically duplicated in separate PODs within a deployment. However, those PODs need to have
-anti-affinity set on them so that they are NOT running on the same hardware. It so happens that anti-affinity also
-helps during upgrades because it makes sure that PODs are on different worker nodes, therefore allowing enough PODs to
-come down even after considering their PDB.
+True high availability requires a duplication of a process to be running on separate hardware, thus making sure that an application will continue to run if one piece of hardware goes down. OpenShift can easily make that happen since processes are automatically duplicated in separate PODs within a deployment. However, those PODs need to have anti-affinity set on them so that they are NOT running on the same hardware. 
+
+During an upgrade anti-affinity is important so that there aren’t too many pods on a node when it is time for it to reboot. For example: if there are 4 pods from a single deployment on a node, and the PDB is set to only allow 1 pod be deleted at a time, then it will take 4 times a long for that node to reboot because it will be waiting on all 4 pods to be deleted.
 
 == Liveness / Readiness Probes
 

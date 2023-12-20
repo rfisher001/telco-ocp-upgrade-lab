@@ -10,3 +10,15 @@
 ** xref:API-Compatibility.adoc#k8s-skew[Kubernetes Version Skew]
 ** xref:API-Compatibility.adoc#ocp-upgrade-path[OpenShift Upgrade Path]
 
+* xref:CNF-Upgrade-Prep.adoc[CNF Upgrade Preparation]
+** xref:CNF-Upgrade-Prep.adoc#life-of-a-pod[Life of a POD]
+** xref:CNF-Upgrade-Prep.adoc#cnf-req-doc[CNF Requirements Document]
+** xref:CNF-Upgrade-Prep.adoc#pdb[POD Disruption Budget]
+** xref:CNF-Upgrade-Prep.adoc#pod-anti-affinity[POD Anti-affinity]
+
+* xref:OCP-upgrade-prep.adoc[OCP Upgrade Preparation]
+** xref:OCP-upgrade-prep.adoc#firmware-compatibility[Firmware compatibility]
+** xref:OCP-upgrade-prep.adoc#layer-product-compatibility[Layer product compatibility]
+** xref:OCP-upgrade-prep.adoc#prepare-mcp[Prepare MCPs]
+
+* xref:Applying-MCPs.adoc[Applying MCPs]

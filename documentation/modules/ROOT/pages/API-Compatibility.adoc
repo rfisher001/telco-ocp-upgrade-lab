@@ -17,17 +17,18 @@ The easiest way verify your application functionality will still work, is to mak
 
 [#ocp-upgrade-path]
 == OpenShift Upgrade Path
-Please also note that not all releases of OCP can be upgraded to any arbitrary Z-release even if they contain all of the required patches. 
+Can I choose any Z-release in the new EUS or Y-stream version? -NO
+The new 4.Y+2(or+1).Z release needs to have the same patch level that your currency 4.Y.Z release has. 
+
+Why does 4.14.1 not have the same patches as 4.12.45?
+All “new” patches are applied upstream first. This means that after 4.14.0 was release, 4.15 became the upstream version.
+For example: the way that patches are applied to new and old releases is with new z-releases so a patch that is applied in X.Y+2.4 might have also been applied to X.Y.36. 
+
 OpenShift upgrade process mandates that:
 If fix “A” is present in a specific X.Y.Z release of OCP
 Then fix “A” MUST be present in the X.Y+1.Z release that OCP is upgraded TO
 
-Consequence of the chosen destination version of 4.12.z defines which is the maximum version of OCP4.11.z, OCP4.10.z and OCP4.9.z
-not all 4.9.z version will permit to upgrade to a given version of OCP4.12.z
-A given version of OCP4.12.z will have requirements to a maximum version of OCP4.9z
-This is due to how fixes are backported into older releases of OCP.
-
-You can use the https://access.redhat.com/labs/ocpupgradegraph/update_path[upgrade graph tool] to determine if the path is valid for your z-release. You should also always verify with your Sales Engineer or Technical Account Manager at Red Hat to make sure the upgrade path is valid for Telco implementations.
+You can use the upgrade graph tool to determine if the path is valid for your z-release. You should also always verify with your Sales Engineer or Technical Account Manager at Red Hat to make sure the upgrade path is valid for Telco implementations.
 
 .K8s Version Skey
 image::k8s-vers-skew.png[]

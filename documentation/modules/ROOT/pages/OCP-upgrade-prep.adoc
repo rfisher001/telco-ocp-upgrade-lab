@@ -45,13 +45,13 @@ section, below, for more details on the pause/un-pause process.
 
 // insert image for MCP
 .Worker node MCPs in a 5 rack cluster
-image::../assets/images/5Rack-MCP.jpg[]
+image::5Rack-MCP.jpg[]
 
 The division and size of these MCPs can vary depending on many factors. In general the standard division is between 8
 and 10 nodes per MCP to allow the operations team to control how many nodes are taken down at a time.
 
 .Separate MCPs inside of a group of Load Balancer or purpose built nodes
-image::../assets/images/LBorHT-MCP.jpg[]
+image::LBorHT-MCP.jpg[]
 
 In larger clusters there is quite often a need to separate out several nodes for purposes like Load Balancing or other
 high throughput purposes, which usually have different machine sets to configure SR-IOV. In these cases we do not want
@@ -60,7 +60,7 @@ out into at least 3 different MCPs and unpause them individually.
 
 // insert image for MCP
 .Small cluster worker MCPs
-image::../assets/images/Worker-MCP.jpg[]
+image::Worker-MCP.jpg[]
 
 Smaller cluster example with 1 rack
 
