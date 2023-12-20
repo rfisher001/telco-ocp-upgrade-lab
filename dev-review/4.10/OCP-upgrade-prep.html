@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>OCP Upgrade Preparation :: LAB - Telco OCP Upgrade Lab</title>
+    <link rel="canonical" href="https://labs.sysdeseng.com/4.10/OCP-upgrade-prep.html">
+    <meta name="generator" content="Antora 3.1.6">
+    <link rel="stylesheet" href="../_/css/site.css">
+  </head>
+  <body class="article">
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand">
+      <a class="navbar-item" href="https://www.redhat.com/en/solutions/telecommunications" target="_blank"><img src="../_/img/Logo-Red_Hat-A-Reverse-RGB.png" height="40px" alt="Red Hat Telco Solutions"></a>
+      <a class="navbar-item" style="font-size: 24px; color: white" href="https://labs.sysdeseng.com">LAB - Telco OCP Upgrade Lab</a>
+      <button class="navbar-burger" data-target="topbar-nav">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+    <div id="topbar-nav" class="navbar-menu">
+      <div class="navbar-end">
+        <a class="navbar-item" href="https://developers.redhat.com/ebooks/" target="_blank">Books</a>
+        <div class="navbar-item has-dropdown is-hoverable">
+          <a class="navbar-link" href="#">More Tutorials</a>
+          <div class="navbar-dropdown">
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/kubernetes-tutorial/" target="_blank">Kubernetes</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/istio-tutorial/" target="_blank">Istio</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/quarkus-tutorial/" target="_blank">Quarkus</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/knative-tutorial/" target="_blank">Knative</a>
+            <a class="navbar-item" href="https://redhat-developer-demos.github.io/tekton-tutorial/" target="_blank">Tekton</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+</header>
+<div class="body">
+<div class="nav-container" data-component="4.10" data-version="">
+  <aside class="nav">
+    <div class="panels">
+<div class="nav-panel-menu is-active" data-panel="menu">
+  <nav class="nav-menu">
+    <h3 class="title"><a href="index.html"></a></h3>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="0">
+<ul class="nav-list">
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="index.html">Welcome</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="index.html#contributors">Contributors</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="introduction.html">Introduction</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="introduction.html#lab-aim">Who is this lab aimed at?</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="introduction.html#lab-software-versions">Lab Software Versions</a>
+  </li>
+</ul>
+  </li>
+  <li class="nav-item" data-depth="1">
+    <button class="nav-item-toggle"></button>
+    <a class="nav-link" href="API-Compatibility.html">OCP API Compatibility Policy</a>
+<ul class="nav-list">
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="API-Compatibility.html#cnf-api-compatibility">CNF API Compatibility</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="API-Compatibility.html#k8s-skew">Kubernetes Version Skew</a>
+  </li>
+  <li class="nav-item" data-depth="2">
+    <a class="nav-link" href="API-Compatibility.html#ocp-upgrade-path">OpenShift Upgrade Path</a>
+  </li>
+</ul>
+  </li>
+</ul>
+  </li>
+</ul>
+  </nav>
+</div>
+    </div>
+  </aside>
+</div>
+<main class="article">
+<div class="toolbar" role="navigation">
+<button class="nav-toggle"></button>
+<nav class="breadcrumbs" aria-label="breadcrumbs">
+  <ul>
+    <li><a href="index.html">LAB - Telco OCP Upgrade Lab</a></li>
+    <li><a href="OCP-upgrade-prep.html">OCP Upgrade Preparation</a></li>
+  </ul>
+</nav>
+  <div class="edit-this-page"><a href="file:///Users/rfisher/github/telco-ocp-upgrade-lab/documentation/modules/ROOT/pages/OCP-upgrade-prep.adoc">Edit this Page</a></div>
+</div>
+  <div class="content">
+<article class="doc">
+<h1 class="page">OCP Upgrade Preparation</h1>
+<div class="sect1">
+<h2 id="firmware-compatibility"><a class="anchor" href="#firmware-compatibility"></a>Firmware compatibility</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>All hardware vendors will advise that it is always best to be on their latest certified version of firmware for their
+hardware. In the telco world this comes with a trust but verify approach due to the high throughput nature of telco
+CNFs. Therefore, it is important to have a regimented group who can test the current and latest firmware from any vendor
+to make sure that all components will work with both. It is not always recommended to upgrade firmware in conjunction
+with an OCP upgrade however if it is possible to test the latest release of firmware that will improve the odds that
+you won’t run into issues down the road.<br>
+Upgrading firmware is a very important debate because the process can be very intrusive and has a potential for causing
+a node to require manual interventions before the node will come back online. On the other hand it may be imperative to
+upgrade the firmware due to security fixes, new required functionality or compatibility with the new release of OCP
+components. Therefore, it is up to everyone to verify with their hardware vendors, verify compatibility with OCP
+components and perform tests in their lab before moving forward.</p>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="layer-product-compatibility"><a class="anchor" href="#layer-product-compatibility"></a>Layer product compatibility</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>It is important to make sure all layered products will run on the new version of OCP that you will be moving to. This,
+very much, includes all Operators.</p>
+</div>
+<div class="paragraph">
+<p>Verify the current installed list of Operators installed on your cluster. For example:</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlightjs highlight"><code class="language-bash hljs" data-lang="bash"># oc get csv -A
+NAMESPACE                              NAME                                 DISPLAY          VERSION   REPLACES                             PHASE
+chapter2                               gitlab-operator-kubernetes.v0.17.2   GitLab           0.17.2    gitlab-operator-kubernetes.v0.17.1   Succeeded
+openshift-operator-lifecycle-manager   packageserver                        Package Server   0.19.0                                         Succeeded</code></pre>
+</div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="prepare-mcp"><a class="anchor" href="#prepare-mcp"></a>Prepare MCPs</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Prepare your Machine Config Pool (MCP) labels by grouping your nodes, depending on the number of nodes in your cluster.
+MCPs should be split up into 8 to 10 nodes per group. However, there is no hard fast rule as to how many nodes need to
+be in each MCP. The purpose of these MCPs is to group nodes together so that a group of nodes can be controlled
+independently of the rest. Additional information and examples can be found <a href="https://docs.openshift.com/container-platform/4.12/updating/update-using-custom-machine-config-pools.html">here, under the canary rollout documentation</a>.<br>
+These MCPs will be used to un-pause a set of nodes during the upgrade process, thus allowing them to be upgraded and
+rebooted at a determined time instead of at the pleasure of the scheduler. Please review the upgrade process flow
+section, below, for more details on the pause/un-pause process.</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="../assets/images/5Rack-MCP.jpg" alt="5Rack MCP">
+</div>
+<div class="title">Figure 1. Worker node MCPs in a 5 rack cluster</div>
+</div>
+<div class="paragraph">
+<p>The division and size of these MCPs can vary depending on many factors. In general the standard division is between 8
+and 10 nodes per MCP to allow the operations team to control how many nodes are taken down at a time.</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="../assets/images/LBorHT-MCP.jpg" alt="LBorHT MCP">
+</div>
+<div class="title">Figure 2. Separate MCPs inside of a group of Load Balancer or purpose built nodes</div>
+</div>
+<div class="paragraph">
+<p>In larger clusters there is quite often a need to separate out several nodes for purposes like Load Balancing or other
+high throughput purposes, which usually have different machine sets to configure SR-IOV. In these cases we do not want
+to upgrade all of these nodes without getting a chance to test during the upgrade. Therefore, we need to separate them
+out into at least 3 different MCPs and unpause them individually.</p>
+</div>
+<div class="imageblock unresolved">
+<div class="content">
+<img src="../assets/images/Worker-MCP.jpg" alt="Worker MCP">
+</div>
+<div class="title">Figure 3. Small cluster worker MCPs</div>
+</div>
+<div class="paragraph">
+<p>Smaller cluster example with 1 rack</p>
+</div>
+<div class="paragraph">
+<p>The process and pace at which you un-pause the MCPs is determined by your CNFs and their configuration. Please review
+the sections on PDB and anti-affinity for CNFs. If your CNF can properly handle scheduling within an OpenShift cluster
+you can un-pause several MCPs at a time and set the MaxUnavailable to as high as 50%. This will allow as many as half
+of the nodes in your MCPs to restart and upgrade. This will reduce the amount of time that is needed for a specific
+maintenance window and allow your cluster to upgrade quickly. Hopefully you can see how keeping your PDB and
+anti-affinity correctly configured will help in the long run.</p>
+</div>
+</div>
+</div>
+</article>
+<aside class="toc sidebar" data-title="Contents" data-levels="2">
+  <div class="toc-menu"></div>
+</aside>
+  </div>
+</main>
+</div>
+<footer class="footer">
+  <a class="rhd-logo" href="https://redhat.com" target="_blank"></div>
+</footer>
+<script src="../_/js/vendor/clipboard.js"></script>
+<script src="../_/js/site.js"></script>
+<script async src="../_/js/vendor/highlight.js"></script>
+  </body>
+</html>

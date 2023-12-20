@@ -5,4 +5,8 @@
 ** xref:introduction.adoc#lab-aim[Who is this lab aimed at?]
 ** xref:introduction.adoc#lab-software-versions[Lab Software Versions]
 
+* xref:API-Compatibility.adoc[OCP API Compatibility Policy]
+** xref:API-Compatibility.adoc#cnf-api-compatibility[CNF API Compatibility]
+** xref:API-Compatibility.adoc#k8s-skew[Kubernetes Version Skew]
+** xref:API-Compatibility.adoc#ocp-upgrade-path[OpenShift Upgrade Path]
 

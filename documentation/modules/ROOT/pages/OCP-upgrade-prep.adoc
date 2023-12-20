@@ -2,6 +2,7 @@
 include::_attributes.adoc[]
 :profile: core-lcm-lab
 
+[#firmware-compatibility]
 == Firmware compatibility
 
 All hardware vendors will advise that it is always best to be on their latest certified version of firmware for their
@@ -16,6 +17,7 @@ upgrade the firmware due to security fixes, new required functionality or compat
 components. Therefore, it is up to everyone to verify with their hardware vendors, verify compatibility with OCP
 components and perform tests in their lab before moving forward. 
 
+[#layer-product-compatibility]
 == Layer product compatibility
 
 It is important to make sure all layered products will run on the new version of OCP that you will be moving to. This,
@@ -30,6 +32,7 @@ chapter2                               gitlab-operator-kubernetes.v0.17.2   GitL
 openshift-operator-lifecycle-manager   packageserver                        Package Server   0.19.0                                         Succeeded
 ----
 
+[#prepare-mcp]
 == Prepare MCPs
 
 Prepare your Machine Config Pool (MCP) labels by grouping your nodes, depending on the number of nodes in your cluster.

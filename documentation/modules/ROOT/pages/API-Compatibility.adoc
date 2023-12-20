@@ -2,18 +2,20 @@
 include::_attributes.adoc[]
 :profile: core-lcm-lab
 
+[#cnf-api-compatibility]
 == CNF API Compatibility
 OpenShift and Kubernetes are strong because they use APIs for so many functions. This also means that the APIs will change over time as components are updated. Therefore, it is important to verify that an API call is still compatible with the cluster so that you will receive the desired response. Please review the documented section called https://docs.openshift.com/container-platform/4.14/rest_api/understanding-api-support-tiers.html[“Understanding API Tiers”].
 
 The most important thing to understand when considering which Z-release to upgrade to inside of a new Y-release is what patches need to be in the new Z-release. In other words if you are currently at OCP 4.11.28 you will need to make sure to upgrade to a Z-release of 4.12 that has all of the patches in it that were applied to 4.11.28, otherwise you will break the built-in compatibility of Kubernetes.
 
+[#k8s-skew]
 == Kubernetes Version Skew
 Support of specific API versions needs to be maintained by each cluster operator. With new releases of operators come new APIs. Therefore, the changes or skews in APIs need to be maintained. To a certain extent the APIs can be compatible across several releases of an operator. This list of operators and the releases that are compatible are at: https://kubernetes.io/releases/version-skew-policy 
 
 The easiest way verify your application functionality will still work, is to make sure that you follow 
 
 
-
+[#ocp-upgrade-path]
 == OpenShift Upgrade Path
 Please also note that not all releases of OCP can be upgraded to any arbitrary Z-release even if they contain all of the required patches. 
 OpenShift upgrade process mandates that:
@@ -28,4 +30,4 @@ This is due to how fixes are backported into older releases of OCP.
 You can use the https://access.redhat.com/labs/ocpupgradegraph/update_path[upgrade graph tool] to determine if the path is valid for your z-release. You should also always verify with your Sales Engineer or Technical Account Manager at Red Hat to make sure the upgrade path is valid for Telco implementations.
 
 .K8s Version Skey
-image::../assets/images/k8s-vers-skew.png[]
+image::k8s-vers-skew.png[]
