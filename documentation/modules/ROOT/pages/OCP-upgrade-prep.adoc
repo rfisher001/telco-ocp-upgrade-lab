@@ -35,12 +35,14 @@ chapter2                               gitlab-operator-kubernetes.v0.17.2   GitL
 openshift-operator-lifecycle-manager   packageserver                        Package Server   0.19.0                                         Succeeded
 ----
 
+[#OLM-Operator-compatibility]
 === OLM Operator compatibility
 There is a set of Red Hat Operators that are NOT part of the cluster operators which are otherwise known as the OLM installed operators. To determine the compatibility of these OLM installed operators there is a great web based tool that can be used to determine which versions of OCP are compatible with specific releases of an Operator. This tool is meant to tell you if you need to upgrade an Operator after each Y-Stream upgrade or if you can wait until you have fully upgraded to the next EUS release.
 In Step 9 under the “Upgrade Process Flow” section you will find additional information regarding what you need to do if an Operator needs to be upgraded after performing the first Y-Stream Control Plane upgrade.
 
 NOTE: Some Operators are compatible with several releases of OCP. So, you may not need to upgrade until you complete the cluster upgrade. This is shown in Step 13 of the Upgrade Process Flow.
 
+[#Non-Red-Hat-OLM-Operators]
 === Non-Red Hat OLM Operators
 For all OLM installed Operators that are NOT directly supported by Red Hat, please contact the supporting vendor to make sure of release compatibility. 
 
@@ -56,6 +58,7 @@ These MCPs will be used to un-pause a set of nodes during the upgrade process, t
 
 During an upgrade there is always a chance that there will be a problem. Most often the problem is related to hardware failure or needing to be reset. If a problem were to occur, having a set of MCPs in a paused state allows the cluster administrator to make sure there are enough nodes running at all times to keep all applications running. The most important thing is to make sure there are enough resources for all application pods. 
 
+[#how-divide-nodes-into-mcps]
 === How should worker nodes be divided into MCPs?
 
 This can vary depending on how many nodes are in the cluster or how many nodes are in a node role. By default the 2 roles in a cluster are master and worker. However, in Telco clusters we quite often split the worker nodes out into 2 separate roles of control plane and data plane. The most important thing is to add MCPs to split out the nodes in each of these two groups.
@@ -91,6 +94,7 @@ image::Worker-MCP.jpg[]
 
 The process and pace at which you un-pause the MCPs is determined by your CNFs and their configuration. Please review the sections on PDB and anti-affinity for CNFs. If your CNF can properly handle scheduling within an OpenShift cluster you can un-pause several MCPs at a time and set the MaxUnavailable to as high as 50%. This will allow as many as half of the nodes in an MCPs to restart and upgrade. This will reduce the amount of time that is needed for a specific maintenance window and allow your cluster to upgrade quickly.
 
+[#review-cluster-mcps-nodes]
 === Review your cluster for available MCPs and nodes
 
 First you can run “oc get mcp” to show your current list of MCPs:
@@ -122,6 +126,7 @@ euschannel-worker-1.test.corp     Ready    worker   25d   v1.23.12+8a6bfe4
 
 Determine, from the above suggestions, how you would like to separate out your worker nodes into machine config pools (MCP).
 
+[#create-your-mcps]
 === Create your MCPs
 
 This is a 2 step process:
@@ -131,6 +136,7 @@ This is a 2 step process:
 
 NOTE: In the following example there are only 2 nodes and 2 MCPs. Therefore, each MCP only has 1 node in each.
 
+[#labeling-nodes]
 ==== Labeling nodes
 
 We first need to label the nodes so that they can be put into MCPs. We will do this with the following commands:
@@ -154,6 +160,7 @@ euschannel-worker-0.test.corp     Ready    mcp-1,worker   25d   v1.23.12+8a6bfe4
 euschannel-worker-1.test.corp     Ready    mcp-2,worker   25d   v1.23.12+8a6bfe4
 ----
 
+[#applying-mcps-according-to-label]
 ==== Applying MCPs according to label
 
 Now you need to create yaml files that will apply the labels as MCPs in your cluster. Each MCP will have to have a separate file or a separate section (as it is shown below).
@@ -204,6 +211,7 @@ Apply or create the MCPs through:
 machineconfigpool.machineconfiguration.openshift.io/mcp-2 created
 ----
 
+[#monitor-mcps]
 ==== Monitor MCP formation
 Now you can run “oc get mcp” again and your new MCPs will show. It will take a few minutes for your nodes to move into the new MCPs that they are assigned to. However, the nodes will NOT reboot during this time.
 
