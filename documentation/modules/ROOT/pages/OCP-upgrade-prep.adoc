@@ -5,12 +5,15 @@ include::_attributes.adoc[]
 [#firmware-compatibility]
 == Firmware compatibility
 
+Firmware is NOT part of the OpenShift upgrade and can not be controlled through OpenShift. However, in Telco we run most of our clusters on baremetal which means that we need to be very mindful of the firmware level on all of our hardware.
+
 All hardware vendors will advise that it is always best to be on their latest certified version of firmware for their
 hardware. In the telco world this comes with a trust but verify approach due to the high throughput nature of telco
 CNFs. Therefore, it is important to have a regimented group who can test the current and latest firmware from any vendor
 to make sure that all components will work with both. It is not always recommended to upgrade firmware in conjunction
 with an OCP upgrade however if it is possible to test the latest release of firmware that will improve the odds that
-you won’t run into issues down the road. +
+you won’t run into issues down the road. 
+
 Upgrading firmware is a very important debate because the process can be very intrusive and has a potential for causing
 a node to require manual interventions before the node will come back online. On the other hand it may be imperative to
 upgrade the firmware due to security fixes, new required functionality or compatibility with the new release of OCP
@@ -32,41 +35,58 @@ chapter2                               gitlab-operator-kubernetes.v0.17.2   GitL
 openshift-operator-lifecycle-manager   packageserver                        Package Server   0.19.0                                         Succeeded
 ----
 
+=== OLM Operator compatibility
+There is a set of Red Hat Operators that are NOT part of the cluster operators which are otherwise known as the OLM installed operators. To determine the compatibility of these OLM installed operators there is a great web based tool that can be used to determine which versions of OCP are compatible with specific releases of an Operator. This tool is meant to tell you if you need to upgrade an Operator after each Y-Stream upgrade or if you can wait until you have fully upgraded to the next EUS release.
+In Step 9 under the “Upgrade Process Flow” section you will find additional information regarding what you need to do if an Operator needs to be upgraded after performing the first Y-Stream Control Plane upgrade.
+
+NOTE: Some Operators are compatible with several releases of OCP. So, you may not need to upgrade until you complete the cluster upgrade. This is shown in Step 13 of the Upgrade Process Flow.
+
+=== Non-Red Hat OLM Operators
+For all OLM installed Operators that are NOT directly supported by Red Hat, please contact the supporting vendor to make sure of release compatibility. 
+
+
 [#prepare-mcp]
 == Prepare MCPs
 
-Prepare your Machine Config Pool (MCP) labels by grouping your nodes, depending on the number of nodes in your cluster.
-MCPs should be split up into 8 to 10 nodes per group. However, there is no hard fast rule as to how many nodes need to
-be in each MCP. The purpose of these MCPs is to group nodes together so that a group of nodes can be controlled
-independently of the rest. Additional information and examples can be found https://docs.openshift.com/container-platform/4.12/updating/update-using-custom-machine-config-pools.html[here, under the canary rollout documentation]. +
-These MCPs will be used to un-pause a set of nodes during the upgrade process, thus allowing them to be upgraded and
-rebooted at a determined time instead of at the pleasure of the scheduler. Please review the upgrade process flow
-section, below, for more details on the pause/un-pause process.
+Prepare your Machine Config Pool (MCP) labels by grouping your nodes, depending on the number of nodes in your cluster. MCPs should be split up into 8 to 10 nodes per group. However, there is no hard fast rule as to how many nodes need to be in each MCP. The purpose of these MCPs is to group nodes together so that the upgrade and reboot of a group of nodes can be controlled independently of the rest. Additional information and examples can be found here, under the https://docs.openshift.com/container-platform/4.14/updating/updating_a_cluster/eus-eus-update.html#updating-eus-to-eus-upgrade-cli_eus-to-eus-update[EUS to EUS upgrade documentation].
+These MCPs will be used to un-pause a set of nodes during the upgrade process, thus allowing them to be upgraded and rebooted at a determined time instead of at the pleasure of the scheduler. Please review the upgrade process flow section, below, for more details on the pause/un-pause process.
+
+[#what-purpose-upgrade-some]
+=== What is the purpose of only upgrading some nodes?
+
+During an upgrade there is always a chance that there will be a problem. Most often the problem is related to hardware failure or needing to be reset. If a problem were to occur, having a set of MCPs in a paused state allows the cluster administrator to make sure there are enough nodes running at all times to keep all applications running. The most important thing is to make sure there are enough resources for all application pods. 
+
+=== How should worker nodes be divided into MCPs?
+
+This can vary depending on how many nodes are in the cluster or how many nodes are in a node role. By default the 2 roles in a cluster are master and worker. However, in Telco clusters we quite often split the worker nodes out into 2 separate roles of control plane and data plane. The most important thing is to add MCPs to split out the nodes in each of these two groups.
+
+For example: +
+We have 15 worker nodes in a cluster +
+10 worker nodes are in the control plane role +
+5 worker nodes are in the data plane role +
+
+In this cluster you should split both the CNF control plane and data plane worker node roles into at least 2 MCPs. +
+The advantage is that having 2 MCPs will allow you to have one set of nodes that are not affected by the upgrade if you need a stopping point.
+
+An example of a larger cluster might have as many as 100 worker nodes in the control plane role. In this case you would want to make sure that you keep each MCP to around 10 nodes. This will allow you to either unpause multiple MCPs at a time to speed up the upgrade or allow you to separate out the upgrade over at least 2 maintenance windows.
+
+Here is a depiction of what this would look like:
 
 // insert image for MCP
 .Worker node MCPs in a 5 rack cluster
 image::5Rack-MCP.jpg[]
 
-The division and size of these MCPs can vary depending on many factors. In general the standard division is between 8
-and 10 nodes per MCP to allow the operations team to control how many nodes are taken down at a time.
+The division and size of these MCPs can vary depending on many factors. In general the standard division in large clusters is between 8 and 10 nodes per MCP to allow the operations team to control how many nodes are taken down at a time.
 
-.Separate MCPs inside of a group of Load Balancer or purpose built nodes
+Here is another example but with a medium cluster. +
+There are a total of 6 nodes in this role. The MCPs inside of this role are split into 2 node MCPs.
+The smaller MCPs allow 2 nodes to be upgraded which can then sit through a day to allow for verification of CNF compatibility before completing the upgrade on the other 4 nodes.
+
+.Separate MCPs in a medium cluster into 3 MCPs
 image::LBorHT-MCP.jpg[]
-
-In larger clusters there is quite often a need to separate out several nodes for purposes like Load Balancing or other
-high throughput purposes, which usually have different machine sets to configure SR-IOV. In these cases we do not want
-to upgrade all of these nodes without getting a chance to test during the upgrade. Therefore, we need to separate them
-out into at least 3 different MCPs and unpause them individually.
 
 // insert image for MCP
 .Small cluster worker MCPs
 image::Worker-MCP.jpg[]
 
-Smaller cluster example with 1 rack
-
-The process and pace at which you un-pause the MCPs is determined by your CNFs and their configuration. Please review
-the sections on PDB and anti-affinity for CNFs. If your CNF can properly handle scheduling within an OpenShift cluster
-you can un-pause several MCPs at a time and set the MaxUnavailable to as high as 50%. This will allow as many as half
-of the nodes in your MCPs to restart and upgrade. This will reduce the amount of time that is needed for a specific
-maintenance window and allow your cluster to upgrade quickly. Hopefully you can see how keeping your PDB and
-anti-affinity correctly configured will help in the long run.
+The process and pace at which you un-pause the MCPs is determined by your CNFs and their configuration. Please review the sections on PDB and anti-affinity for CNFs. If your CNF can properly handle scheduling within an OpenShift cluster you can un-pause several MCPs at a time and set the MaxUnavailable to as high as 50%. This will allow as many as half of the nodes in an MCPs to restart and upgrade. This will reduce the amount of time that is needed for a specific maintenance window and allow your cluster to upgrade quickly.
