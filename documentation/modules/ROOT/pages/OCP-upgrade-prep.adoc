@@ -90,3 +90,143 @@ image::LBorHT-MCP.jpg[]
 image::Worker-MCP.jpg[]
 
 The process and pace at which you un-pause the MCPs is determined by your CNFs and their configuration. Please review the sections on PDB and anti-affinity for CNFs. If your CNF can properly handle scheduling within an OpenShift cluster you can un-pause several MCPs at a time and set the MaxUnavailable to as high as 50%. This will allow as many as half of the nodes in an MCPs to restart and upgrade. This will reduce the amount of time that is needed for a specific maintenance window and allow your cluster to upgrade quickly.
+
+=== Review your cluster for available MCPs and nodes
+
+First you can run “oc get mcp” to show your current list of MCPs:
+
+[source, bash]
+----
+# oc get mcp
+NAME     CONFIG  UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT   UPDATEDMACHINECOUNT   DEGRADEDMACHINECOUNT   AGE
+master   rendered-master-b…e83   True      False      False      3              3                   3                     
+0                      25d
+worker   rendered-worker-2….c4f   True      False      False      2              2                   2                    
+ 0                      25d
+----
+
+Now list out all of the nodes in your cluster:
+
+NOTE: Review what is listed in the “ROLES” column, this will get updated as we move through this process.
+
+[source, bash]
+----
+# oc get no
+NAME                                           STATUS   ROLES    AGE   VERSION
+euschannel-ctlplane-0.test.corp   Ready    master   25d   v1.23.12+8a6bfe4
+euschannel-ctlplane-1.test.corp   Ready    master   25d   v1.23.12+8a6bfe4
+euschannel-ctlplane-2.test.corp   Ready    master   25d   v1.23.12+8a6bfe4
+euschannel-worker-0.test.corp     Ready    worker   25d   v1.23.12+8a6bfe4
+euschannel-worker-1.test.corp     Ready    worker   25d   v1.23.12+8a6bfe4
+----
+
+Determine, from the above suggestions, how you would like to separate out your worker nodes into machine config pools (MCP).
+
+=== Create your MCPs
+
+This is a 2 step process:
+
+. We add a MCP label to each node
+. We apply an MCP to the cluster which will organize the nodes based on their labels
+
+NOTE: In the following example there are only 2 nodes and 2 MCPs. Therefore, each MCP only has 1 node in each.
+
+==== Labeling nodes
+
+We first need to label the nodes so that they can be put into MCPs. We will do this with the following commands:
+
+[source, bash]
+----
+oc label node euschannel-worker-0.test.corp node-role.kubernetes.io/mcp-1=
+oc label node euschannel-worker-1.test.corp node-role.kubernetes.io/mcp-2=
+----
+
+NOTE: The labels will show up when you run the “oc get node” command:
+
+[source, bash]
+----
+# oc get no
+NAME                                STATUS   ROLES          AGE   VERSION
+euschannel-ctlplane-0.test.corp   Ready    master         25d   v1.23.12+8a6bfe4
+euschannel-ctlplane-1.test.corp   Ready    master         25d   v1.23.12+8a6bfe4
+euschannel-ctlplane-2.test.corp   Ready    master         25d   v1.23.12+8a6bfe4
+euschannel-worker-0.test.corp     Ready    mcp-1,worker   25d   v1.23.12+8a6bfe4
+euschannel-worker-1.test.corp     Ready    mcp-2,worker   25d   v1.23.12+8a6bfe4
+----
+
+==== Applying MCPs according to label
+
+Now you need to create yaml files that will apply the labels as MCPs in your cluster. Each MCP will have to have a separate file or a separate section (as it is shown below).
+
+Here is one example:
+
+[source, bash]
+----
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: mcp-2
+spec:
+  machineConfigSelector:
+    matchExpressions:
+      - {
+         key: machineconfiguration.openshift.io/role,
+         operator: In,
+         values: [worker,mcp-2]
+        }
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/mcp-2: ""
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfigPool
+metadata:
+  name: mcp-1
+spec:
+  machineConfigSelector:
+    matchExpressions:
+      - {
+         key: machineconfiguration.openshift.io/role,
+         operator: In,
+         values: [worker,mcp-1]
+        }
+  nodeSelector:
+    matchLabels:
+      node-role.kubernetes.io/mcp-1: ""
+----
+
+Apply or create the MCPs through:
+
+[source, bash]
+----
+# oc apply -f mcps.yaml
+machineconfigpool.machineconfiguration.openshift.io/mcp-2 created
+----
+
+==== Monitor MCP formation
+Now you can run “oc get mcp” again and your new MCPs will show. It will take a few minutes for your nodes to move into the new MCPs that they are assigned to. However, the nodes will NOT reboot during this time.
+
+NOTE: You will still see the original worker and master MCPs that are part of the cluster.
+
+This is what it will look like right after you apply the MCPs:
+[source, bash]
+----
+# oc get mcp
+NAME     CONFIG      UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT   UPDATEDMACHINECOUNT   DEGRADEDMACHINECOUNT   AGE
+master   rendered-master-b…e83   True      False      False      3              3                 3                     0                      25d
+mcp-1    rendered-mcp-1-2…c4f    False     True       True       1              0                 0                     0                      10s
+mcp-2    rendered-mcp-2-2…c4f    False     True       True       1              0                 0                     0                      10s
+worker   rendered-worker-2…c4f   False     True       True       0              0                 0                     2                      25d
+----
+
+This is what it will look like after the MCPs have been completely applied:
+[source, bash]
+----
+# oc get mcp
+NAME     CONFIG     UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT   UPDATEDMACHINECOUNT   DEGRADEDMACHINECOUNT   AGE
+master   rendered-master-b…e83   True      False      False      3              3                 3                     0                      25d
+mcp-1    rendered-mcp-1-2…c4f    True      False      False      1              1                 1                     0                      7m33s
+mcp-2    rendered-mcp-2-2…c4f    True      False      False      1              1                 1                     0                      51s
+worker   rendered-worker-2…c4f   True      False      False      0              0                 0                     0                      25d
+----
