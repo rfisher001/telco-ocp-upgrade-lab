@@ -37,7 +37,7 @@ openshift-operator-lifecycle-manager   packageserver                        Pack
 
 [#OLM-Operator-compatibility]
 === OLM Operator compatibility
-There is a set of Red Hat Operators that are NOT part of the cluster operators which are otherwise known as the OLM installed operators. To determine the compatibility of these OLM installed operators there is a great web based tool that can be used to determine which versions of OCP are compatible with specific releases of an Operator. This tool is meant to tell you if you need to upgrade an Operator after each Y-Stream upgrade or if you can wait until you have fully upgraded to the next EUS release.
+There is a set of Red Hat Operators that are NOT part of the cluster operators which are otherwise known as the OLM installed operators. To determine the compatibility of these OLM installed operators there is a great web based tool that can be used to determine which versions of OCP are compatible with specific releases of an Operator. https://access.redhat.com/labs/ocpouic/?upgrade_path=4.12%20to%204.14[This tool] is meant to tell you if you need to upgrade an Operator after each Y-Stream upgrade or if you can wait until you have fully upgraded to the next EUS release.
 In Step 9 under the “Upgrade Process Flow” section you will find additional information regarding what you need to do if an Operator needs to be upgraded after performing the first Y-Stream Control Plane upgrade.
 
 NOTE: Some Operators are compatible with several releases of OCP. So, you may not need to upgrade until you complete the cluster upgrade. This is shown in Step 13 of the Upgrade Process Flow.
@@ -117,11 +117,11 @@ NOTE: Review what is listed in the “ROLES” column, this will get updated as 
 ----
 # oc get no
 NAME                                           STATUS   ROLES    AGE   VERSION
-euschannel-ctlplane-0.test.corp   Ready    master   25d   v1.23.12+8a6bfe4
-euschannel-ctlplane-1.test.corp   Ready    master   25d   v1.23.12+8a6bfe4
-euschannel-ctlplane-2.test.corp   Ready    master   25d   v1.23.12+8a6bfe4
-euschannel-worker-0.test.corp     Ready    worker   25d   v1.23.12+8a6bfe4
-euschannel-worker-1.test.corp     Ready    worker   25d   v1.23.12+8a6bfe4
+ctrl-plane-0   Ready    control-plane,master   39d   v1.25.10+28ed2d7
+ctrl-plane-1   Ready    control-plane,master   39d   v1.25.10+28ed2d7
+ctrl-plane-2   Ready    control-plane,master   39d   v1.25.10+28ed2d7
+worker-0       Ready    worker           39d   v1.25.10+28ed2d7
+worker-1       Ready    worker           39d   v1.25.10+28ed2d7
 ----
 
 Determine, from the above suggestions, how you would like to separate out your worker nodes into machine config pools (MCP).
@@ -143,8 +143,8 @@ We first need to label the nodes so that they can be put into MCPs. We will do t
 
 [source, bash]
 ----
-oc label node euschannel-worker-0.test.corp node-role.kubernetes.io/mcp-1=
-oc label node euschannel-worker-1.test.corp node-role.kubernetes.io/mcp-2=
+oc label node worker-0 node-role.kubernetes.io/mcp-1=
+oc label node worker-1 node-role.kubernetes.io/mcp-2=
 ----
 
 NOTE: The labels will show up when you run the “oc get node” command:
@@ -153,11 +153,11 @@ NOTE: The labels will show up when you run the “oc get node” command:
 ----
 # oc get no
 NAME                                STATUS   ROLES          AGE   VERSION
-euschannel-ctlplane-0.test.corp   Ready    master         25d   v1.23.12+8a6bfe4
-euschannel-ctlplane-1.test.corp   Ready    master         25d   v1.23.12+8a6bfe4
-euschannel-ctlplane-2.test.corp   Ready    master         25d   v1.23.12+8a6bfe4
-euschannel-worker-0.test.corp     Ready    mcp-1,worker   25d   v1.23.12+8a6bfe4
-euschannel-worker-1.test.corp     Ready    mcp-2,worker   25d   v1.23.12+8a6bfe4
+ctrl-plane-0   Ready    control-plane,master   39d   v1.25.10+28ed2d7
+ctrl-plane-1   Ready    control-plane,master   39d   v1.25.10+28ed2d7
+ctrl-plane-2   Ready    control-plane,master   39d   v1.25.10+28ed2d7
+worker-0       Ready    mcp-1,worker           39d   v1.25.10+28ed2d7
+worker-1       Ready    mcp-2,worker           39d   v1.25.10+28ed2d7
 ----
 
 [#applying-mcps-according-to-label]
@@ -237,4 +237,66 @@ master   rendered-master-b…e83   True      False      False      3            
 mcp-1    rendered-mcp-1-2…c4f    True      False      False      1              1                 1                     0                      7m33s
 mcp-2    rendered-mcp-2-2…c4f    True      False      False      1              1                 1                     0                      51s
 worker   rendered-worker-2…c4f   True      False      False      0              0                 0                     0                      25d
+----
+
+[#enviro-considerations]
+== Environment considerations
+
+In Telecommunications environments most of the clusters are kept in an “air gapped” or disconnected network. Therefore, you will need to update your offline image repository. When choosing which images to include, please review the OCP API Compatibility Policy section to make sure the cluster will be able to upgrade to the new version of OCP. Setting up and managing an offline image repository is currently out of scope at this time but will be added at a later date.
+
+[#platform-prep]
+== Platform preparation
+
+This section should be used as a basic set of checks and verifications to make sure that your cluster is ready for an upgrade.
+
+[#basic-cluster-checks]
+=== Basic cluster checks
+
+First you will need to verify that there are no issues with failed pods within the cluster that will stop the upgrade. A very easy first check is to run:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc get po -A | egrep -vi 'complete|running'
+NAMESPACE         NAME       READY   STATUS      RESTARTS        AGE
+[cnf@utility ~]$
+----
+
+NOTE: You may need to run this twice if there are pods that are in pending state as they may just have moved around due to normal operating conditions of the cluster.
+
+If there are problems with pods, please review the troubleshooting documentation to determine what the issue is with the pod(s).
+
+Next verify that all nodes within the cluster are available:
+[source, bash]
+----
+jcl@utility ~]$ oc get no
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   32d   v1.25.14+a52e8df
+ctrl-plane-1   Ready    control-plane,master   32d   v1.25.14+a52e8df
+ctrl-plane-2   Ready    control-plane,master   32d   v1.25.14+a52e8df
+worker-0       Ready    mcp-1,worker           32d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           32d   v1.25.14+a52e8df
+----
+
+Verify that all baremetal nodes are fully provisioned and ready in the cluster. Here is an example of a cluster that has a baremetal node that had an error while provisioning:
+[source, bash]
+----
+cnf@utility ~]$ oc get bmh -n openshift-machine-api
+NAME           STATE       CONSUMER                   ONLINE   ERROR   AGE
+ctrl-plane-0   unmanaged   cnf-58879-master-0         true             33d
+ctrl-plane-1   unmanaged   cnf-58879-master-1         true             33d
+ctrl-plane-2   unmanaged   cnf-58879-master-2         true             33d
+worker-0       unmanaged   cnf-58879-worker-0-45879   true             33d
+worker-1       unmanaged   cnf-58879-worker-0-dszsh   true             33d
+----
+
+Now verify that all cluster operators are ready:
+[source, bash]
+----
+[cnf@utility ~]$ oc get co
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.12.45   True        False         False      17h
+baremetal                                  4.12.45   True        False         False      32d
+...
+service-ca                                 4.12.45   True        False         False      32d
+storage                                    4.12.45   True        False         False      32d
 ----

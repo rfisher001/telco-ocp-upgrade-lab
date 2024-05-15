@@ -1,0 +1,101 @@
+= OCP Upgrade Process Flow - Continued
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+[#step-3-pause-mcp]
+== Step 3: Pause your worker node MCPs
+In this example there are 2 MCPs, (mcp-1 & mcp-2) the spec.paused is set to true for each of these MCPs. 
+
+[source, bash]
+----
+$ oc patch mcp/mcp-1 --type merge --patch '{"spec":{"paused":true}}'
+$ oc patch mcp/mcp-2 --type merge --patch '{"spec":{"paused":true}}'
+----
+NOTE: Two specific things above, the name of the mcp after the “/” and setting pause:true
+
+Here is an easy way to read through the jq output of get -o json and print it out as a table:
+[source, bash]
+----
+[cnf@utility ~]$ oc get mcp -o json | jq -r '["MCP","Paused"], ["---","------"], (.items[] | [(.metadata.name), (.spec.paused)]) | @tsv' | grep -v worker
+MCP     Paused
+---     ------
+master  false
+mcp-1   true
+mcp-2   true
+----
+
+NOTE: This also includes the master and worker MCPs, which are not changed during an upgrade
+
+[#step-4-backup-etcd]
+== Step 4: Backup etcd
+Log into a control plane node:
+
+[source, bash]
+----
+$ oc debug node/ctrl-plane-0
+
+# chroot /host
+----
+Run the backup script:
+[source, bash]
+----
+/usr/local/bin/cluster-backup.sh /home/core/assets/backup
+
+Certificate /etc/kubernetes/static-pod-certs/configmaps/etcd-serving-ca/ca-bundle.crt is missing. Checking in different directory
+Certificate /etc/kubernetes/static-pod-resources/etcd-certs/configmaps/etcd-serving-ca/ca-bundle.crt found!
+found latest kube-apiserver: /etc/kubernetes/static-pod-resources/kube-apiserver-pod-17
+
+…
+
+{"level":"info","ts":"2023-11-13T19:57:56.87184Z","caller":"snapshot/v3_snapshot.go:97","msg":"saved","path":"/home/core/assets/backup/snapshot_2023-11-13_195755.db"}
+Snapshot saved at /home/core/assets/backup/snapshot_2023-11-13_195755.db
+Deprecated: Use `etcdutl snapshot status` instead.
+
+{"hash":271797193,"revision":88606492,"totalKey":22247,"totalSize":201666560}
+snapshot db and kube resources are successfully saved to /home/core/assets/backup
+----
+Pull files off of the control plane node:
+[source, bash]
+----
+$ ssh core@ctrl-plane-0 "sudo chown -R core assets"
+
+$ scp core@ctrl-plane-0:/home/core/assets/backup/* .
+----
+
+[#step-5-health-check]
+== Step 5: Double check your cluster health
+
+Just because double checking is good...
+
+Some suggested checks at this time are:
+
+* Cluster operators
+* Node status
+* Look for failed pods
+
+[source, bash]
+----
+[cnf@utility ~]# oc get co
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.12.45   True        False         False      2d19h
+baremetal                                  4.12.45   True        False         False      35d
+cloud-controller-manager                   4.12.45   True        False         False      35d
+cloud-credential                           4.12.45   True        False         False      35d
+cluster-autoscaler                         4.12.45   True        False         False      35d
+config-operator                            4.12.45   True        False         False      35d
+console                                    4.12.45   True        False         False      34d
+...
+storage                                    4.12.45   True        False         False      35d
+etcd                                       4.13.32   True        False         False      35d
+
+[cnf@utility ~]# oc get node
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   35d   v1.25.14+a52e8df
+ctrl-plane-1   Ready    control-plane,master   35d   v1.25.14+a52e8df
+ctrl-plane-2   Ready    control-plane,master   35d   v1.25.14+a52e8df
+worker-0       Ready    mcp-1,worker           35d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           35d   v1.25.14+a52e8df
+
+[cnf@utility ~]# oc get po -A | egrep -iv 'running|complete'
+(Note: this should return NOTHING)
+----

@@ -1,0 +1,253 @@
+= OCP Upgrade Process Flow - Continued
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+[#step-9-upgrade-operators]
+== Step 9: Upgrade OLM Operators
+Check to see which operators need to be upgraded:
+
+[source, bash]
+----
+$ oc get installplan -A | egrep 'APPROVED|false'
+
+NAMESPACE                          NAME            CSV                                               APPROVAL   APPROVED
+metallb-system                     install-nwjnh   metallb-operator.v4.13.0-202311031531             Manual     false
+openshift-nmstate                  install-5r7wr   kubernetes-nmstate-operator.4.13.0-202311021930   Manual     false
+----
+
+Then patch the installplans for those operators:
+
+[source, bash]
+----
+$ oc patch installplan -n metallb-system install-nwjnh --type merge --patch \
+'{"spec":{"approved":true}}'
+
+installplan.operators.coreos.com/install-nwjnh patched
+----
+
+Now monitor the namespace:
+
+Right after patch:
+
+[source, bash]
+----
+$ oc get all -n metallb-system
+
+NAME                                                       READY   STATUS              RESTARTS   AGE
+pod/metallb-operator-controller-manager-69b5f884c-8bp22    0/1     ContainerCreating   0          4s
+pod/metallb-operator-controller-manager-77895bdb46-bqjdx   1/1     Running             0          4m1s
+pod/metallb-operator-webhook-server-5d9b968896-vnbhk       0/1     ContainerCreating   0          4s
+pod/metallb-operator-webhook-server-d76f9c6c8-57r4w        1/1     Running             0          4m1s
+…
+
+NAME                                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/metallb-operator-controller-manager-69b5f884c    1         1         0       4s
+replicaset.apps/metallb-operator-controller-manager-77895bdb46   1         1         1       4m1s
+replicaset.apps/metallb-operator-controller-manager-99b76f88     0         0         0       4m40s
+replicaset.apps/metallb-operator-webhook-server-5d9b968896       1         1         0       4s
+replicaset.apps/metallb-operator-webhook-server-6f7dbfdb88       0         0         0       4m40s
+replicaset.apps/metallb-operator-webhook-server-d76f9c6c8        1         1         1       4m1s
+----
+
+Once it is complete it should look like this:
+
+[source, bash]
+----
+[kni@utility ~]$ oc get all -n metallb-system
+
+NAME                                                      READY   STATUS    RESTARTS   AGE
+pod/metallb-operator-controller-manager-69b5f884c-8bp22   1/1     Running   0          25s
+pod/metallb-operator-webhook-server-5d9b968896-vnbhk      1/1     Running   0          25s
+
+…
+
+NAME                                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/metallb-operator-controller-manager-69b5f884c    1         1         1       25s
+replicaset.apps/metallb-operator-controller-manager-77895bdb46   0         0         0       4m22s
+replicaset.apps/metallb-operator-webhook-server-5d9b968896       1         1         1       25s
+replicaset.apps/metallb-operator-webhook-server-d76f9c6c8        0         0         0       4m22s
+----
+
+Verify that the operators don’t need to update more then once:
+
+[source, bash]
+----
+$ oc get installplan -A | egrep 'APPROVED|false'
+NAMESPACE                  NAME            CSV                       APPROVAL   APPROVED
+----
+
+NOTE: Sometimes you will need to approve an update twice because some operators have interim z-release versions that need to be stepped through.
+
+[#if-then-goto]
+== If-Then GO TO:
+If you are performing Y-strem or Z-stream upgrades than you can skip to “Un-Pause the worker nodes”
+
+[#step-10-y-stream]
+== Step 10: Second Y-stream update
+
+Now we need to upgrade the Y-stream control plane version to the new EUS version. 
+
+First we will verify the 4.Y.Z release listed in Step 1 is still listed as a good channel to move to:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade
+Cluster version is 4.13.32
+
+Upgradeable=False
+
+  Reason: AdminAckRequired
+  Message: Kubernetes 1.27 and therefore OpenShift 4.14 remove several APIs which require admin consideration. Please see the knowledge article https://access.redhat.com/articles/6958395 for details and instructions.
+
+Upstream is unset, so the cluster will use an appropriate default.
+Channel: eus-4.14 (available channels: candidate-4.13, candidate-4.14, eus-4.14, fast-4.13, fast-4.14, stable-4.13, stable-4.14)
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.13.33     quay.io/openshift-release-dev/ocp-release@sha256:7083519
+Additional updates which are not recommended, or where the recommended status is "Unknown", for your cluster configuration are available, to view those re-run the command with --include-not-recommended.
+----
+
+NOTE: If you upgrade early/soon after initial GA of a new Y-release, you may not see any new Y-releases available when you run the ‘oc adm upgrade’ command. However, you will see that you can choose the flag “--include-not-recommended” which will allow you to see releases that are not recommended. Which will look like the following:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade --include-not-recommended
+Cluster version is 4.13.32
+
+Upgradeable=False
+
+  Reason: AdminAckRequired
+  Message: Kubernetes 1.27 and therefore OpenShift 4.14 remove several APIs which require admin consideration. Please see the knowledge article https://access.redhat.com/articles/6958395 for details and instructions.
+
+Upstream is unset, so the cluster will use an appropriate default.
+Channel: eus-4.14 (available channels: candidate-4.13, candidate-4.14, eus-4.14, fast-4.13, fast-4.14, stable-4.13, stable-4.14)
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.13.33     quay.io/openshift-release-dev/ocp-release@sha256:7083519fd7
+
+Supported but not recommended updates:
+
+  Version: 4.14.12
+  Image: quay.io/openshift-release-dev/ocp-release@sha256:671bc35e
+  Recommended: Unknown
+  Reason: EvaluationFailed
+  Message: Exposure to AzureRegistryImagePreservation is unknown due to an evaluation failure: invalid PromQL result length must be one, but is 0
+  In Azure clusters, the in-cluster image registry may fail to preserve images on update. https://issues.redhat.com/browse/IR-461
+----
+
+As you can see this specifies that an Azure cluster could have an issue. However, it does not show any potential risk for a baremetal cluster. Therefore, unless you are running in an Azure cluster you should be able to upgrade without any issues.
+
+[#admin-ack]
+=== Admin Acknowledge
+When moving between Y-stream releases you will need to run the patch command to acknowledge that you are willing to move. In the output of the “oc adm upgrade” command it will show you a URL (https://access.redhat.com/articles/6958395) that will give you the specific command to run.
+
+[source, bash]
+----
+[cnf@utility ~]$ oc -n openshift-config patch cm admin-acks --patch '{"data":{"ack-4.13-kube-1.27-api-removals-in-4.14":"true"}}' --type=merge
+
+configmap/admin-acks patched
+----
+
+[#start-y-stream-ctrl-pln-upgrade]
+=== Start Y-stream Control Plane Upgrade
+
+Once you have determined the full new release that you are moving to (from the above commands), you can run the “oc adm upgrade –to=x.y.z” command.
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade --to=4.14.11
+Requested update to 4.14.11
+----
+
+NOTE: You may be moving to a z-release that (as stated above) may have potential issues with platform’s other than the one you are running on. Here is an example of the output and how to work with it:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade --to=4.14.11
+error: the update 4.14.11 is not one of the recommended updates, but is available as a conditional update. To accept the Recommended=Unknown risk and to proceed with update use --allow-not-recommended.
+  Reason: EvaluationFailed
+  Message: Exposure to AzureRegistryImagePreservation is unknown due to an evaluation failure: invalid PromQL result length must be one, but is 0
+  In Azure clusters, the in-cluster image registry may fail to preserve images on update. https://issues.redhat.com/browse/IR-461
+
+[cnf@utility ~]$ oc adm upgrade --to=4.14.11 --allow-not-recommended
+warning: with --allow-not-recommended you have accepted the risks with 4.14.11 and bypassed Recommended=Unknown EvaluationFailed: Exposure to AzureRegistryImagePreservation is unknown due to an evaluation failure: invalid PromQL result length must be one, but is 0
+In Azure clusters, the in-cluster image registry may fail to preserve images on update. https://issues.redhat.com/browse/IR-461
+
+Requested update to 4.14.11
+----
+
+[#step-11-monitor-upgrade]
+== Step 11: Monitor the upgrade
+Using the following command you will get this output to monitor the progress of the upgrade.
+
+[source, bash]
+----
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.13.32   True        True          9m48s   Working towards 4.14.11: 118 of 860 done (13% complete), waiting on kube-apiserver
+
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.13.32   True        False         False      3d15h
+baremetal                                  4.13.32   True        False         False      35d
+cloud-controller-manager                   4.13.32   True        False         False      35d
+cloud-credential                           4.13.32   True        False         False      35d
+cluster-autoscaler                         4.13.32   True        False         False      35d
+console                                    4.13.32   True        False         False      34d
+...
+config-operator                            4.14.11   True        False         False      35d
+etcd                                       4.14.11   True        False         False      35d
+kube-apiserver                             4.14.11   True        True          False      35d     NodeInstallerProgressing: 1 nodes are at revision 21; 2 nodes are at revision 23
+
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   35d   v1.26.13+77e61a2
+ctrl-plane-1   Ready    control-plane,master   35d   v1.26.13+77e61a2
+ctrl-plane-2   Ready    control-plane,master   35d   v1.26.13+77e61a2
+worker-0       Ready    mcp-1,worker           35d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           35d   v1.25.14+a52e8df
+
+NAMESPACE                                          NAME                                                              READY   STATUS      RESTARTS       AGE
+openshift-kube-apiserver                           kube-apiserver-ctrl-plane-0                                       0/5     Pending     0              <invalid>
+----
+
+During the upgrade it will cycle through one or several of the cluster operators at a time, giving you a status of the operator upgrade in the “MESSAGE” section of ‘oc get co’.
+
+Once it is done with all of the cluster operators, it will reboot each of the control plane nodes (one at a time). During this part of the upgrade you will see a lot of the cluster operators give messages that look like they are upgrading again or are in a degraded state because the control plane node is offline. 
+
+As soon as the last control plane node is complete, the cluster version will show as upgraded to the new EUS release.
+
+It should look like this:
+[source, bash]
+----
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.14.11   True        False         39m     Cluster version is 4.14.11
+
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.14.11   True        False         False      3d17h
+baremetal                                  4.14.11   True        False         False      36d
+cloud-controller-manager                   4.14.11   True        False         False      36d
+cloud-credential                           4.14.11   True        False         False      36d
+cluster-autoscaler                         4.14.11   True        False         False      36d
+config-operator                            4.14.11   True        False         False      36d
+console                                    4.14.11   True        False         False      35d
+...
+operator-lifecycle-manager-packageserver   4.14.11   True        False         False      35d
+service-ca                                 4.14.11   True        False         False      36d
+storage                                    4.14.11   True        False         False      36d
+
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   35d   v1.27.10+28ed2d7
+ctrl-plane-1   Ready    control-plane,master   36d   v1.27.10+28ed2d7
+ctrl-plane-2   Ready    control-plane,master   36d   v1.27.10+28ed2d7
+worker-0       Ready    mcp-1,worker           35d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           35d   v1.25.14+a52e8df
+----
+
+[#step-12-upgrade-operators]
+== Step 12: Upgrade All of the OLM Operators
+This time we will need to not only approve all of the operators as before but we will also need to add install plans for any other operators that we want to upgrade. The list of operators and specific change to operators is currently not in scope for this revision but will be added soon.
+
+Please follow the same steps as before, in Step 8.
+Then check with all of your Operator vendors or Operator pages to see if any other operators need to be updated.

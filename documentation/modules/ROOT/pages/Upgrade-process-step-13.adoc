@@ -1,0 +1,136 @@
+= OCP Upgrade Process Flow - Continued
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+[#step-13-un-pause-worker]
+== Step 13: Un-Pause the worker MCP(s)
+Now you have gotten to the fun but sometimes long part of the upgrade process. Each of the worker nodes in the cluster will need to reboot to upgrade to the new EUS, Y-stream or Z-stream version.
+
+You will need to determine how many MCPs you will want to upgrade at a time, depending on how many CNF pods can be taken down at a time and how your PDS and affinity are set up.
+
+Here is a simple check and list of nodes with MCP:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc get mcp
+NAME     CONFIG                                             UPDATED   UPDATING   DEGRADED   MACHINECOUNT   READYMACHINECOUNT   UPDATEDMACHINECOUNT   DEGRADEDMACHINECOUNT   AGE
+master   rendered-master-c9a52144456dbff9c9af9c5a37d1b614   True      False      False      3              3                   3                     0                      36d
+mcp-1    rendered-mcp-1-07fe50b9ad51fae43ed212e84e1dcc8e    False     False      False      1              0                   0                     0                      47h
+mcp-2    rendered-mcp-2-07fe50b9ad51fae43ed212e84e1dcc8e    False     False      False      1              0                   0                     0                      47h
+worker   rendered-worker-f1ab7b9a768e1b0ac9290a18817f60f0   True      False      False      0              0                   0                     0                      36d
+
+[cnf@utility ~]$ oc get no
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   36d   v1.27.10+28ed2d7
+ctrl-plane-1   Ready    control-plane,master   36d   v1.27.10+28ed2d7
+ctrl-plane-2   Ready    control-plane,master   36d   v1.27.10+28ed2d7
+worker-0       Ready    mcp-1,worker           36d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           36d   v1.25.14+a52e8df
+
+[cnf@utility ~]$ oc get mcp -o json | jq -r '["MCP","Paused"], ["---","------"], (.items[] | [(.metadata.name), (.spec.paused)]) | @tsv' | grep -v worker
+MCP     Paused
+---     ------
+master  false
+mcp-1   true
+mcp-2   true
+----
+
+Unpause a MCP with:
+[source, bash]
+----
+[jcl@utility ~]$ oc patch mcp/mcp-1 --type merge --patch '{"spec":{"paused":false}}'
+
+machineconfigpool.machineconfiguration.openshift.io/mcp-1 patched
+
+[jcl@utility ~]$ oc get mcp -o json | jq -r '["MCP","Paused"], ["---","------"], (.items[] | [(.metadata.name), (.spec.paused)]) | @tsv' | grep -v worker
+
+MCP     Paused
+---     ------
+master  false
+mcp-1   false
+mcp-2   true
+----
+
+As each MCP is complete, then you can unpause the next MCP.
+[source, bash]
+----
+NAME           STATUS                        ROLES                  AGE   VERSION
+ctrl-plane-0   Ready                         control-plane,master   36d   v1.27.10+28ed2d7
+ctrl-plane-1   Ready                         control-plane,master   36d   v1.27.10+28ed2d7
+ctrl-plane-2   Ready                         control-plane,master   36d   v1.27.10+28ed2d7
+worker-0       Ready                         mcp-1,worker           36d   v1.27.10+28ed2d7
+worker-1       NotReady,SchedulingDisabled   mcp-2,worker           36d   v1.25.14+a52e8df
+----
+
+[#step-14-verify-health]
+== Step 14: Verify Health of Cluster
+
+Here is a set of commands that you should run after upgrading the cluster to verify everything is back up and running properly:
+
+* oc get clusterversion +
+This should return showing the new cluster version and the “progressing” column should show “false”
+* oc get node +
+All nodes in the cluster should have a status of “ready” and should be at the same version 
+* oc get mcp -o json | jq -r '["MCP","Paused"], ["---","------"], (.items[] | [(.metadata.name), (.spec.paused)]) | @tsv' | grep -v worker +
+This should show “false” for the paused column for all MCPs
+* oc get co +
+All cluster operators should show available = true, progressing = false & degraded = false
+* oc get po -A | egrep -iv 'complete|running' +
+This should return completely empty but you may show a few pods still moving around right after the upgrade. You may need to watch this for a while to make sure everything is clear. 
+
+[source, bash]
+----
+[jcl@utility ~]$ oc get clusterversion
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.14.11   True        False         3d21h   Cluster version is 4.14.11
+[jcl@utility ~]$ oc get no
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   39d   v1.27.10+28ed2d7
+ctrl-plane-1   Ready    control-plane,master   39d   v1.27.10+28ed2d7
+ctrl-plane-2   Ready    control-plane,master   39d   v1.27.10+28ed2d7
+worker-0       Ready    mcp-1,worker           39d   v1.27.10+28ed2d7
+worker-1       Ready    mcp-2,worker           39d   v1.27.10+28ed2d7
+[jcl@utility ~]$ oc get mcp -o json | jq -r '["MCP","Paused"], ["---","------"], (.items[] | [(.metadata.name), (.spec.paused)]) | @tsv' | grep -v worker
+MCP     Paused
+---     ------
+master  false
+mcp-1   false
+mcp-2   false
+[jcl@utility ~]$ oc get co
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.14.11   True        False         False      7d13h
+baremetal                                  4.14.11   True        False         False      39d
+cloud-controller-manager                   4.14.11   True        False         False      39d
+cloud-credential                           4.14.11   True        False         False      39d
+cluster-autoscaler                         4.14.11   True        False         False      39d
+config-operator                            4.14.11   True        False         False      39d
+console                                    4.14.11   True        False         False      38d
+control-plane-machine-set                  4.14.11   True        False         False      39d
+csi-snapshot-controller                    4.14.11   True        False         False      39d
+dns                                        4.14.11   True        False         False      39d
+etcd                                       4.14.11   True        False         False      39d
+image-registry                             4.14.11   True        False         False      39d
+ingress                                    4.14.11   True        False         False      38d
+insights                                   4.14.11   True        False         False      39d
+kube-apiserver                             4.14.11   True        False         False      39d
+kube-controller-manager                    4.14.11   True        False         False      39d
+kube-scheduler                             4.14.11   True        False         False      39d
+kube-storage-version-migrator              4.14.11   True        False         False      3d18h
+machine-api                                4.14.11   True        False         False      39d
+machine-approver                           4.14.11   True        False         False      39d
+machine-config                             4.14.11   True        False         False      39d
+marketplace                                4.14.11   True        False         False      39d
+monitoring                                 4.14.11   True        False         False      38d
+network                                    4.14.11   True        False         False      39d
+node-tuning                                4.14.11   True        False         False      3d22h
+openshift-apiserver                        4.14.11   True        False         False      7d13h
+openshift-controller-manager               4.14.11   True        False         False      39d
+openshift-samples                          4.14.11   True        False         False      3d22h
+operator-lifecycle-manager                 4.14.11   True        False         False      39d
+operator-lifecycle-manager-catalog         4.14.11   True        False         False      39d
+operator-lifecycle-manager-packageserver   4.14.11   True        False         False      39d
+service-ca                                 4.14.11   True        False         False      39d
+storage                                    4.14.11   True        False         False      39d
+[jcl@utility ~]$ oc get po -A | egrep -iv 'complete|running'
+NAMESPACE                                          NAME                                                        READY   STATUS      RESTARTS        AGE
+----

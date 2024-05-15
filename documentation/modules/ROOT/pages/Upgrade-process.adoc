@@ -1,0 +1,165 @@
+= OCP Upgrade Process Flow
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+[#overview]
+== Overview
+In an effort to specifically sound like a broken record, the preparation phase of the upgrade process is probably the most important! If everything to this point in the documentation has been followed then barring any unforeseen issues, like hardware, the rest of this document should all just be step by step.
+
+[#step-1]
+=== Step 1: Determine your target release
+
+Utilize the https://access.redhat.com/labs/ocpupgradegraph/update_path[Red Hat update path tool] and/or the
+https://github.com/openshift/cincinnati-graph-data/tree/master/channels[cincinnati graph repository] to determine which release you will be moving to.
+
+.Showing the path from 4.12 to 4.14
+image::images/4.12to4.14-upgrade-graph.png[]
+
+=== Step 2: Change your channel 
+
+[#z-stream-upgrade]
+==== Z-Stream Upgrade
+You do NOT need to change the channel when performing a z-stream upgrade. Below you will see the output of the “oc adm upgrade” command as it shows which z-releases are available to upgrade to:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade
+Cluster version is 4.12.45
+
+Upgradeable=False
+
+  Reason: AdminAckRequired
+  Message: Kubernetes 1.26 and therefore OpenShift 4.13 remove several APIs which require admin consideration. Please see the knowledge article https://access.redhat.com/articles/6958394 for details and instructions.
+
+Upstream is unset, so the cluster will use an appropriate default.
+Channel: eus-4.12 (available channels: candidate-4.12, candidate-4.13, eus-4.12, eus-4.14, fast-4.12, fast-4.13, stable-4.12, stable-4.13)
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.12.49     quay.io/openshift-release-dev/ocp-release@sha256:c93c62d7
+  4.12.48     quay.io/openshift-release-dev/ocp-release@sha256:c31b9b65a56d19
+  4.12.47     quay.io/openshift-release-dev/ocp-release@sha256:fcc1253
+  4.12.46     quay.io/openshift-release-dev/ocp-release@sha256:2dda1776d69c5
+----
+
+[#eus-eus-upgrade]
+==== EUS to EUS Upgrade
+
+For a review of all channels you can refer to the https://docs.openshift.com/container-platform/4.12/updating/understanding-upgrade-channels-release.html[channel release documentation]. +
+Determine what channel you are currently pointed to:
+[source, bash]
+----
+[cnf@utility ~]$ oc get clusterversion -o=jsonpath='{.items[*].spec}' | jq
+{
+  "channel": "eus-4.12",
+  "clusterID": "93b96485-33df-4ff3-88ab-65e88ea49e68",
+  "desiredUpdate": {
+    "force": false,
+    "image": "quay.io/openshift-release-dev/ocp-release@sha256:faf0aebc0abce8890e046eecfa392c24bc24f6c49146c45447fb0977e692db6e",
+    "version": "4.12.45"
+  }
+}
+----
+
+Change your channel to point to the new channel:
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade channel eus-4.14
+[cnf@utility ~]$ oc get clusterversion -o=jsonpath='{.items[*].spec}' | jq
+{
+  "channel": "eus-4.14",
+  "clusterID": "1111111-2222-aaaa-bbbb-99999999000",
+  "desiredUpdate": {
+    "force": false,
+    "image": "quay.io/openshift-release-dev/ocp-release@sha256:faf0aebc0abce8890e046eecfa392c24bc24f6c49146c45447fb0977e692db6e",
+    "version": "4.12.45"
+  }
+}
+----
+
+[#early-eus-upgrade-testing]
+==== Early testing of EUS to EUS upgrade
+The upgrade path to a brand new release of OpenShift is not available in either the EUS channel or the Stable channel for 45 to 90 days after the initial GA of a minor release. In this case you can begin your testing by using a Fast Channel. Here is that process:
+
+[arabic]
+. Change your Channel to fast-Y+1:
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade channel fast-4.13
+[cnf@utility ~]$ oc adm upgrade
+Cluster version is 4.12.45
+
+Upgradeable=False
+
+  Reason: AdminAckRequired
+  Message: Kubernetes 1.26 and therefore OpenShift 4.13 remove several APIs which require admin consideration. Please see the knowledge article https://access.redhat.com/articles/6958394 for details and instructions.
+
+Upstream is unset, so the cluster will use an appropriate default.
+Channel: fast-4.13 (available channels: candidate-4.12, candidate-4.13, eus-4.12, eus-4.14, fast-4.12, fast-4.13, stable-4.12, stable-4.13)
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.13.33     quay.io/openshift-release-dev/ocp-release@sha256:7142dd4b560
+  4.13.32     quay.io/openshift-release-dev/ocp-release@sha256:cda8ea5b13dc9
+  4.13.31     quay.io/openshift-release-dev/ocp-release@sha256:07cf61e67d3eeee
+  4.13.30     quay.io/openshift-release-dev/ocp-release@sha256:6618dd3c0f5
+  4.13.29     quay.io/openshift-release-dev/ocp-release@sha256:7a72abc3
+  4.13.28     quay.io/openshift-release-dev/ocp-release@sha256:1c8359fc2
+  4.13.27     quay.io/openshift-release-dev/ocp-release@sha256:bc9006febfe
+  4.13.26     quay.io/openshift-release-dev/ocp-release@sha256:dece7b61b1
+  4.13.25     quay.io/openshift-release-dev/ocp-release@sha256:480f5747855
+  4.12.49     quay.io/openshift-release-dev/ocp-release@sha256:c93914c62d7
+  4.12.48     quay.io/openshift-release-dev/ocp-release@sha256:c31a56d19
+  4.12.47     quay.io/openshift-release-dev/ocp-release@sha256:f21253
+  4.12.46     quay.io/openshift-release-dev/ocp-release@sha256:2dd69c5
+----
+
+[arabic, start=2]
+. Follow the procedure below to get to OCP 4.11(Y+1) 
+
+NOTE: You CAN keep your worker nodes paused between EUS releases even if you are using the fast channel.
+
+[arabic, start=3]
+. Once you get to the Y+1 release change your channel again, this time to fast-Y+2
+
+. Follow the EUS upgrade procedures that will take you to the Y+2 release
+
+[#y-stream-upgrade]
+==== Y-Stream Upgrade
+In a Y-Stream upgrade you change the channel to the next release channel. You do have several options but for production clusters it is recommended that you use the Stable or EUS 
+release channels.
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade channel stable-4.13
+[cnf@utility ~]$ oc adm upgrade
+Cluster version is 4.12.45
+
+Upgradeable=False
+
+  Reason: AdminAckRequired
+  Message: Kubernetes 1.26 and therefore OpenShift 4.13 remove several APIs which require admin consideration. Please see the knowledge article https://access.redhat.com/articles/6958394 for details and instructions.
+
+Upstream is unset, so the cluster will use an appropriate default.
+Channel: stable-4.13 (available channels: candidate-4.12, candidate-4.13, eus-4.12, eus-4.14, fast-4.12, fast-4.13, stable-4.12, stable-4.13)
+
+Recommended updates:
+
+  VERSION     IMAGE
+  4.13.33     quay.io/openshift-release-dev/ocp-release@sha256:7142dd4b560
+  4.13.32     quay.io/openshift-release-dev/ocp-release@sha256:cda8ea5b13dc9
+  4.13.31     quay.io/openshift-release-dev/ocp-release@sha256:07cf61e67d3eeee
+  4.13.30     quay.io/openshift-release-dev/ocp-release@sha256:6618dd3c0f5
+  4.13.29     quay.io/openshift-release-dev/ocp-release@sha256:7a72abc3
+  4.13.28     quay.io/openshift-release-dev/ocp-release@sha256:1c8359fc2
+  4.13.27     quay.io/openshift-release-dev/ocp-release@sha256:bc9006febfe
+  4.13.26     quay.io/openshift-release-dev/ocp-release@sha256:dece7b61b1
+  4.13.25     quay.io/openshift-release-dev/ocp-release@sha256:480f5747855
+  4.12.49     quay.io/openshift-release-dev/ocp-release@sha256:c93914c62d7
+  4.12.48     quay.io/openshift-release-dev/ocp-release@sha256:c31a56d19
+  4.12.47     quay.io/openshift-release-dev/ocp-release@sha256:f21253
+  4.12.46     quay.io/openshift-release-dev/ocp-release@sha256:2dd69c5
+----

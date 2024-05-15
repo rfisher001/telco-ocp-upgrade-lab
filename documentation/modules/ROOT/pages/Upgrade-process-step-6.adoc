@@ -1,0 +1,123 @@
+= OCP Upgrade Process Flow - Continued
+include::_attributes.adoc[]
+:profile: core-lcm-lab
+
+[#step-6-admin-acknowledge]
+== Step 6: Acknowledge the upgrade
+EUS-EUS & Y-Stream ONLY +
+Note: This is for ALL upgrades AFTER 4.11
+
+The cluster administrator needs to acknowledge the upgrade can continue by running the following command and setting it to the proper version per the update that the cluster is moving to:
+
+[source, bash]
+----
+$ oc -n openshift-config patch cm admin-acks --patch '{"data":{"ack-4.12-kube-1.26-api-removals-in-4.13":"true"}}' --type=merge
+----
+
+This command has 3 specific variables that need to change depending on the release. Please make sure to change all of them and correlate the kubernetes version to the OCP version that you are moving to. Reference link to K8s and OCP versions
+
+You can verify this update through this command:
+
+[source, bash]
+----
+$ oc get cm admin-acks -n openshift-config -o json | jq .data
+{
+  "ack-4.12-kube-1.26-api-removals-in-4.13": "true",
+  "ack-4.13-kube-1.27-api-removals-in-4.14": "true"
+}
+----
+
+NOTE: This is an example of a cluster that was upgraded from 4.12 to 4.13 then 4.14 in an EUS to EUS upgrade.
+
+[#step-7-begin-upgrade]
+== Step 7: Begin the cluster upgrade
+For this next command you will need to refer back to Step 1 where you determined which 4.13 z-release would be used as the intermediary step.  When going from one Y-release to the next it is VERY important to make sure the z-releases are also compatible.
+
+[source, bash]
+----
+[cnf@utility ~]$ oc adm upgrade --to=4.13.32
+Requested update to 4.13.32
+----
+
+This will change depending on your upgrade function: +
+EUS to EUS - Make sure you point to the interim Y+1 release path + 
+Y-stream - Make sure you use the correct Y.Z release so that you follow K8s Skew policy +
+Z-stream - Verify that there aren’t any issues listed in going to that specific release
+
+A very good way to verify that you are going to a viable release is by running the “oc adm upgrade” command. The output of this command will tell you what releases are available for you to upgrade to.
+
+
+[#step-8-monitor]
+== Step 8: Monitor the upgrade
+
+This command can be used to monitor most things going on in the cluster:
+
+[source, bash]
+----
+watch "oc get clusterversion; echo; oc get co | head -1; oc get co | grep 4.12; oc get co | grep 4.13; echo; oc get no; echo; oc get po -A | egrep -iv 'running|complete'"
+----
+
+This is what it should look like:
+
+[source, bash]
+----
+oc get clusterversion; echo; oc get co | head -1; oc get co | grep 4.12; oc get co | grep 4.13; echo; oc get no; echo; oc get po -A ...  utility.daytwops.bos2.lab: Wed Feb 21 15:44:58 2024
+
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.12.45   True        True          9m37s   Unable to apply 4.13.32: an unknown error has occurred: MultipleErrors
+
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.12.45   True        False         False      2d19h
+baremetal                                  4.12.45   True        False         False      35d
+cloud-controller-manager                   4.12.45   True        False         False      35d
+cloud-credential                           4.12.45   True        False         False      35d
+cluster-autoscaler                         4.12.45   True        False         False      35d
+config-operator                            4.12.45   True        False         False      35d
+console                                    4.12.45   True        False         False      34d
+...
+storage                                    4.12.45   True        False         False      35d
+etcd                                       4.13.32   True        False         False      35d
+
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   35d   v1.25.14+a52e8df
+ctrl-plane-1   Ready    control-plane,master   35d   v1.25.14+a52e8df
+ctrl-plane-2   Ready    control-plane,master   35d   v1.25.14+a52e8df
+worker-0       Ready    mcp-1,worker           35d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           35d   v1.25.14+a52e8df
+
+NAMESPACE                                          NAME                                                              READY   STATUS              RESTARTS        AGE
+openshift-marketplace                              redhat-marketplace-rf86t                                          0/1     ContainerCreating   0               0s
+----
+
+During the upgrade it will cycle through one or several of the cluster operators at a time, giving you a status of the operator upgrade in the “MESSAGE” section of ‘oc get co’.
+
+Once it is done with all of the cluster operators, it will reboot each of the control plane nodes (one at a time). During this part of the upgrade you will see a lot of the cluster operators give messages that look like they are upgrading again or are in a degraded state because the control plane node is offline. 
+
+As soon as the last control plane node is complete, the cluster version will show as upgraded to the next Y-stream release (or z-stream if that is your upgrade path).
+
+This is what it should look like when the control plane update has completed to the intermediate Y-release:
+
+[source, bash]
+----
+NAME      VERSION   AVAILABLE   PROGRESSING   SINCE   STATUS
+version   4.13.32   True        False         173m    Cluster version is 4.13.32
+
+NAME                                       VERSION   AVAILABLE   PROGRESSING   DEGRADED   SINCE   MESSAGE
+authentication                             4.13.32   True        False         False      2d23h
+baremetal                                  4.13.32   True        False         False      35d
+cloud-controller-manager                   4.13.32   True        False         False      35d
+cloud-credential                           4.13.32   True        False         False      35d
+cluster-autoscaler                         4.13.32   True        False         False      35d
+config-operator                            4.13.32   True        False         False      35d
+console                                    4.13.32   True        False         False      34d
+...
+service-ca                                 4.13.32   True        False         False      35d
+storage                                    4.13.32   True        False         False      35d
+
+NAME           STATUS   ROLES                  AGE   VERSION
+ctrl-plane-0   Ready    control-plane,master   35d   v1.26.13+77e61a2
+ctrl-plane-1   Ready    control-plane,master   35d   v1.26.13+77e61a2
+ctrl-plane-2   Ready    control-plane,master   35d   v1.26.13+77e61a2
+worker-0       Ready    mcp-1,worker           35d   v1.25.14+a52e8df
+worker-1       Ready    mcp-2,worker           35d   v1.25.14+a52e8df
+----

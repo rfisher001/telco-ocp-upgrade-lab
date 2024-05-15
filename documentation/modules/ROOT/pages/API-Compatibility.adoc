@@ -12,9 +12,6 @@ The most important thing to understand when considering which Z-release to upgra
 == Kubernetes Version Skew
 Support of specific API versions needs to be maintained by each cluster operator. With new releases of operators come new APIs. Therefore, the changes or skews in APIs need to be maintained. To a certain extent the APIs can be compatible across several releases of an operator. This list of operators and the releases that are compatible are at: https://kubernetes.io/releases/version-skew-policy 
 
-The easiest way verify your application functionality will still work, is to make sure that you follow 
-
-
 [#ocp-upgrade-path]
 == OpenShift Upgrade Path
 Can I choose any Z-release in the new EUS or Y-stream version? -NO
